@@ -457,7 +457,16 @@ pub const Loop = struct {
                     },
 
                     // Only resubmit if we aren't already active (in the queue)
-                    .rearm => if (!c_active) self.submissions.push(c),
+                    // -- and if we are, say so: the state was set dead above,
+                    // and a registered completion left dead is pushed into the
+                    // submission queue on its next pass through here, where
+                    // the kevent path then marks it active again ("invalid
+                    // state in submission queue state=.active").
+                    .rearm => if (c_active) {
+                        c.flags.state = .active;
+                    } else {
+                        self.submissions.push(c);
+                    },
                 }
 
                 // If we filled the events slice, we break to avoid overflow.
