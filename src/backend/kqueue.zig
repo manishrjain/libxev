@@ -563,7 +563,11 @@ pub const Loop = struct {
             }
 
             // If we ran through the loop once we break if we don't care.
-            if (wait == 0) break;
+            // Not before the disarms queued above are submitted, though:
+            // `changes` is local to this tick, so returning here would
+            // drop them and leave a kevent registered for a completion
+            // the caller is about to free.
+            if (wait == 0 and changes == 0) break;
         }
     }
 
