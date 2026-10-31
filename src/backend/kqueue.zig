@@ -972,12 +972,15 @@ pub const Loop = struct {
         // Do our task
         c.result = c.perform(null);
 
-        // Add to our completion queue
-        c.task_loop.thread_pool_completions.push(c);
+        // The push hands `c` to the loop thread, which may run its
+        // callback and free it before we return; nothing of `c` is
+        // read after it.
+        const loop = c.task_loop;
+        loop.thread_pool_completions.push(c);
 
         if (comptime builtin.target.os.tag.isDarwin()) {
             // Wake up our main loop
-            c.task_loop.wakeup() catch {};
+            loop.wakeup() catch {};
         }
     }
 
